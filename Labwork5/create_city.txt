@@ -1,0 +1,12 @@
+add
+Omsk
+10.5
+20.7
+500
+1150000
+75.5
+MEDITERRANIAN
+DIARCHY
+MEDIUM
+Stepan
+show

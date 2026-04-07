@@ -1,0 +1,6 @@
+info
+execute_script create_city.txt
+show
+save
+execute_script smart_script.txt
+execute_script recursion_test.txt

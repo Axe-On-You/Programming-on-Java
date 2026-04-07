@@ -4,58 +4,94 @@ import ru.pmih.prog.commands.Command;
 import ru.pmih.prog.exceptions.IncorrectInputInScriptException;
 import ru.pmih.prog.managers.CommandManager;
 import ru.pmih.prog.utility.console.Console;
-
-import java.util.NoSuchElementException;
-
-/**
- * Класс для работы интерактивного режима (цикл чтения и выполнения команд).
- * @author pmih
- */
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.Scanner;
+import java.util.Stack;
 
 public class Runner {
     private final Console console;
     private final CommandManager commandManager;
+
+    private final Stack<String> scriptStack = new Stack<>();
 
     public Runner(Console console, CommandManager commandManager) {
         this.console = console;
         this.commandManager = commandManager;
     }
 
+    /**
+     * Интерактивный режим (чтение из консоли).
+     */
     public void interactiveMode() {
         console.println("Добро пожаловать! Введите 'help' для получения списка команд.");
-        try {
-            while (true) {
-                console.print("> ");
-                String input = console.readLine();
+        while (true) {
+            console.print("> ");
+            String input = console.readLine();
+            if (input == null) break;
 
-                if (input == null) {
-                    console.println("\nЗавершение работы (Ctrl+D).");
-                    System.exit(0);
-                }
+            processLine(input);
+        }
+    }
 
-                input = input.trim();
-                if (input.isEmpty()) continue;
+    /**
+     * Режим выполнения скрипта.
+     * @param filePath Путь к файлу.
+     */
+    public void scriptMode(String filePath) {
+        File file = new File(filePath);
+        // Проверка на рекурсию
+        if (scriptStack.contains(file.getAbsolutePath())) {
+            console.printError("Обнаружена рекурсия в скрипте: " + filePath);
+            return;
+        }
 
-                String[] tokens = (input + " ").split(" ", 2);
-                String commandName = tokens[0].trim();
-                String commandArgument = tokens[1].trim();
+        scriptStack.push(file.getAbsolutePath());
 
-                Command command = commandManager.getCommands().get(commandName);
-                if (command == null) {
-                    console.printError("Команда '" + commandName + "' не найдена. Введите 'help' для справки.");
-                    continue;
-                }
+        try (Scanner scriptScanner = new Scanner(file)) {
+            Scanner oldScanner = Interrogator.getConsole().getScanner();
+            Interrogator.getConsole().setScanner(scriptScanner);
+            Interrogator.setFileMode();
 
-                try {
-                    command.execute(commandArgument);
-                } catch (IncorrectInputInScriptException e) {
-                    console.println("\n[!] Ошибка ввода в скрипте.");
-                } catch (Exception e) {
-                    console.printError("Произошла ошибка: " + e.getMessage());
-                }
+            while (scriptScanner.hasNextLine()) {
+                String line = scriptScanner.nextLine();
+                if (line.trim().isEmpty()) continue;
+                processLine(line);
             }
-        } catch (NoSuchElementException e) {
-            console.printError("Пользовательский ввод не обнаружен.");
+
+            Interrogator.getConsole().setScanner(oldScanner);
+            Interrogator.setUserMode();
+
+        } catch (FileNotFoundException e) {
+            console.printError("Файл скрипта не найден: " + filePath);
+        } finally {
+            scriptStack.pop();
+        }
+    }
+
+    /**
+     * Общий метод для обработки одной строки (команда + аргумент).
+     */
+    private void processLine(String input) {
+        input = input.trim();
+        if (input.isEmpty()) return;
+
+        String[] tokens = (input + " ").split(" ", 2);
+        String commandName = tokens[0].trim();
+        String commandArgument = tokens[1].trim();
+
+        Command command = commandManager.getCommands().get(commandName);
+        if (command == null) {
+            console.printError("Команда '" + commandName + "' не найдена.");
+            return;
+        }
+
+        try {
+            command.execute(commandArgument);
+        } catch (IncorrectInputInScriptException e) {
+            console.printError("Ошибка ввода в скрипте.");
+        } catch (Exception e) {
+            console.printError("Ошибка: " + e.getMessage());
         }
     }
 }

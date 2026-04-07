@@ -32,13 +32,36 @@ public class Main {
 
         collectionManager.loadCollection();
 
+        // Создаем Runner до регистрации команд, которым он нужен (например, execute_script)
+        Runner runner = new Runner(console, commandManager);
+
+        // Базовые команды
         commandManager.register("help", new HelpCommand(commandManager, console));
         commandManager.register("info", new InfoCommand(collectionManager, console));
         commandManager.register("show", new ShowCommand(collectionManager, console));
-        commandManager.register("add", new AddCommand(collectionManager, console));
-        // TODO: Здесь мы будем регистрировать остальные команды
+        commandManager.register("exit", new ExitCommand());
 
-        Runner runner = new Runner(console, commandManager);
+        // Команды изменения коллекции
+        commandManager.register("add", new AddCommand(collectionManager, console));
+        commandManager.register("update", new UpdateCommand(collectionManager));
+        commandManager.register("remove_by_id", new RemoveByIdCommand(collectionManager));
+        commandManager.register("clear", new ClearCommand(collectionManager));
+        commandManager.register("save", new SaveCommand(collectionManager));
+
+        // Команды со скриптами
+        commandManager.register("execute_script", new ExecuteScriptCommand(runner));
+
+        // Условные команды и фильтрация
+        commandManager.register("add_if_max", new AddIfMaxCommand(collectionManager));
+        commandManager.register("remove_greater", new RemoveGreaterCommand(collectionManager));
+        commandManager.register("remove_lower", new RemoveLowerCommand(collectionManager));
+
+        // Специфические фильтры
+        commandManager.register("remove_any_by_meters_above_sea_level", new RemoveAnyByMetersAboveSeaLevelCommand(collectionManager));
+        commandManager.register("filter_less_than_climate", new FilterLessThanClimateCommand(collectionManager));
+        commandManager.register("print_descending", new PrintDescendingCommand(collectionManager));
+
+        // Запуск
         runner.interactiveMode();
     }
 }

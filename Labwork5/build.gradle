@@ -5,6 +5,14 @@ plugins {
 group = 'ru.pmih.prog'
 version = '1.0-SNAPSHOT'
 
+jar {
+    manifest {
+        attributes(
+                'Main-Class': 'ru.pmih.prog.Main'
+        )
+    }
+}
+
 repositories {
     mavenCentral()
 }
